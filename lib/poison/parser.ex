@@ -58,6 +58,12 @@ defmodule Poison.Parser do
     end
   end
 
+  if Version.match?(System.version, ">=1.3.0-rc.1") do
+    defp value("<" <> rest, pos, _keys) do
+      datetime_continue(rest, pos+1, [])
+    end
+  end
+
   defp value("\"" <> rest, pos, _keys) do
     string_continue(rest, pos+1, [])
   end
@@ -79,6 +85,22 @@ defmodule Poison.Parser do
   end
 
   defp value(other, pos, _keys), do: syntax_error(other, pos)
+
+  ## Dates and Times
+  
+  if Version.match?(System.version, ">=1.3.0-rc.1") do
+    defp datetime_continue("", pos, _), do: syntax_error(nil, pos)
+    defp datetime_continue(">" <> rest, pos, acc) do
+      s = IO.iodata_to_binary(acc)
+      case DateTime.from_iso8601(s) do
+        {:ok, datetime, _} -> {datetime, pos+1, rest}
+        _ -> syntax_error(s, pos - String.length(s))
+      end
+    end
+    defp datetime_continue(<<char>> <> rest, pos, acc) do
+      datetime_continue(rest, pos+1, [acc, char])
+    end
+  end
 
   ## Objects
 

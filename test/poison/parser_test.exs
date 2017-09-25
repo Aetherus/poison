@@ -4,6 +4,15 @@ defmodule Poison.ParserTest do
   import Poison.Parser
   alias Poison.SyntaxError
 
+  test "datetimes" do
+    assert_raise SyntaxError, "Unexpected end of input at position 1", fn -> parse!("<") end
+    assert_raise SyntaxError, "Unexpected token at position 1: 1", fn -> parse!("<123>") end
+
+    s = "2017-09-25T16:22:34+08:00"
+    {:ok, expected, _} = DateTime.from_iso8601(s)
+    assert parse!("<#{s}>") == expected
+  end
+
   test "numbers" do
     assert_raise SyntaxError, "Unexpected end of input at position 1", fn -> parse!("-") end
     assert_raise SyntaxError, "Unexpected token at position 1: -", fn -> parse!("--1") end
